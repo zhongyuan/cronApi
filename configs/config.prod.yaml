@@ -1,0 +1,66 @@
+# ============================================================
+# 生产配置模板：MySQL 与 Redis 部署在公网服务器
+#
+# 敏感信息（数据库密码、JWT 密钥、AppSecret）不要写在文件里，
+# 统一用环境变量注入，见 deploy/.env.example
+# ============================================================
+app:
+  name: cronApi
+  env: prod                  # prod 会开启 Release 模式并强制校验 JWT 密钥
+  addr: ":8080"
+  read_timeout: 15s
+  write_timeout: 30s
+  shutdown_timeout: 15s
+
+log:
+  level: info
+  format: json               # 生产用 json，方便日志采集
+  output: stdout
+
+mysql:
+  enabled: true
+  host: 8.8.8.8              # ← 公网 MySQL 地址（建议填域名，便于换 IP）
+  port: 3306                 # ← 若用 RDS/云数据库请改为其对外端口
+  user: cronapi              # ← 只授予 cron_api 库权限的专用账号
+  password: ""               # 通过 CRONAPI_MYSQL_PASSWORD 注入，勿写死
+  database: cron_api
+  charset: utf8mb4
+  # 关键：必须与 MySQL 服务端 time_zone 一致，否则时间字段会差 8 小时
+  timezone: "Asia/Shanghai"
+  max_idle_conns: 10
+  max_open_conns: 50         # 公网链路建议不超过 50，避免占满服务端 max_connections
+  conn_max_lifetime: 30m     # 公网/云网关常在 30~60 分钟后断开空闲连接，必须短于该值
+  slow_threshold: 300ms
+
+redis:
+  enabled: true
+  addr: "127.0.0.1:6379"     # Redis 建议与 cronApi 同机，走内网/localhost
+  password: ""
+  db: 0
+  pool_size: 50
+  dial_timeout: 3s
+  read_timeout: 2s
+  write_timeout: 2s
+
+jwt:
+  secret: ""                 # 通过 CRONAPI_JWT_SECRET 注入（≥32 字节随机串）
+  issuer: cronApi
+  access_ttl: 2h
+  refresh_ttl: 168h
+
+wechat:
+  app_id: ""                 # 通过 CRONAPI_WECHAT_APP_ID 注入
+  app_secret: ""             # 通过 CRONAPI_WECHAT_APP_SECRET 注入
+  mock: false                # 生产必须关闭 mock
+  endpoint: "https://api.weixin.qq.com"
+  timeout: 5s
+
+scheduler:
+  enabled: true
+  timezone: "Asia/Shanghai"
+  max_concurrency: 8
+
+http_client:
+  timeout: 15s
+  max_idle_conns: 200
+  insecure_skip_verify: false

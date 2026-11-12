@@ -1,0 +1,38 @@
+# ============================================================
+# MySQL 服务端配置片段（Linux 通常追加到 /etc/mysql/mysql.conf.d/mysqld.cnf
+# 或 /etc/my.cnf 的 [mysqld] 段，然后 systemctl restart mysql）
+# 修改前请先备份原配置。
+# ============================================================
+[mysqld]
+# --- 监听与访问控制 ---
+# 必须监听公网地址（默认只监听 127.0.0.1 时公网连不上）
+bind-address            = 0.0.0.0
+# 关闭 DNS 反解：公网高延迟下反解会拖慢每次连接建立
+skip-name-resolve
+
+# --- 时区：必须与 configs/config.prod.yaml 的 mysql.timezone 保持一致 ---
+default-time-zone       = '+08:00'
+
+# --- 字符集：库、表、连接全部 utf8mb4 ---
+character-set-server    = utf8mb4
+collation-server        = utf8mb4_general_ci
+
+# --- 连接数：按 cronApi 的 max_open_conns * 实例数 再留余量 ---
+max_connections         = 300
+# 公网/网关常回收空闲连接，让服务端比客户端更早断开，避免出现 "invalid connection"
+wait_timeout            = 600
+interactive_timeout     = 600
+
+# --- 慢查询与审计（便于排查联调任务把 DB 打慢的问题）---
+slow_query_log          = 1
+slow_query_log_file     = /var/log/mysql/slow.log
+long_query_time         = 0.5
+log_error               = /var/log/mysql/error.log
+
+# --- 传输安全（强烈建议：MySQL 8 默认的 caching_sha2_password 在无 TLS 时
+#     可能要求 RSA 公钥交换，开启 TLS 后既安全又省事）---
+# 证书可用 mysql_ssl_rsa_setup 自动生成，或使用云厂商 CA 证书
+# require_secure_transport = ON
+# ssl_ca   = /etc/mysql/certs/ca.pem
+# ssl_cert = /etc/mysql/certs/server-cert.pem
+# ssl_key  = /etc/mysql/certs/server-key.pem

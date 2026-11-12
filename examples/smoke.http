@@ -1,0 +1,61 @@
+### cronApi 冒烟脚本（VS Code REST Client / GoLand HTTP Client 可直接执行）
+@host = http://127.0.0.1:8080
+
+### 1. 健康检查
+GET {{host}}/healthz
+
+### 2. 小程序登录（mock 模式：openid:xxx 直接指定用户）
+# @name login
+POST {{host}}/api/v1/auth/wechat/login
+Content-Type: application/json
+
+{
+  "code": "openid:u1001"
+}
+
+### 3. 当前用户（需替换 access_token）
+GET {{host}}/api/v1/auth/me
+Authorization: Bearer {{login.response.body.data.access_token}}
+
+### 4. 刷新 token
+POST {{host}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{login.response.body.data.refresh_token}}"
+}
+
+### 5. 创建联调任务（对自身健康检查接口做一次断言）
+POST {{host}}/api/v1/tasks
+Authorization: Bearer {{login.response.body.data.access_token}}
+Content-Type: application/json
+
+{
+  "name": "示例-健康检查",
+  "description": "每 5 分钟检查一次服务健康",
+  "base_url": "{{host}}",
+  "cron_expr": "*/5 * * * *",
+  "enabled": false,
+  "max_retry": 1,
+  "timeout_sec": 30,
+  "steps": [
+    {
+      "name": "healthz",
+      "method": "GET",
+      "url": "/healthz",
+      "auth": "none",
+      "asserts": [
+        {"source": "status", "op": "eq", "value": "200"},
+        {"source": "json:status", "op": "eq", "value": "ok"}
+      ]
+    }
+  ]
+}
+
+### 6. 立即执行任务
+POST {{host}}/api/v1/tasks/1/run
+Authorization: Bearer {{login.response.body.data.access_token}}
+
+### 7. 查看执行记录
+GET {{host}}/api/v1/tasks/1/runs
+Authorization: Bearer {{login.response.body.data.access_token}}

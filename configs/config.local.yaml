@@ -1,0 +1,61 @@
+# ============================================================
+# 本地开发配置：MySQL 用本机 root + 默认端口 3306，微信登录走 mock
+#
+# 用法：
+#   1. 确保本机 MySQL 已启动，且已创建 cron_api 库
+#      建库/建表：mysql -h127.0.0.1 -P3306 -uroot -p < deploy/mysql/schema.sql
+#      （不建也行，服务启动时会自动建库中的表，但库本身要存在）
+#   2. Redis 可选：没启动 Redis 时把 redis.enabled 改为 false（会话走内存）
+#   3. 启动：go run ./cmd/server -c configs/config.local.yaml
+# ============================================================
+app:
+  env: dev
+  addr: ":8080"
+log:
+  level: debug
+  format: console
+
+mysql:
+  enabled: true
+  host: 127.0.0.1
+  port: 3306
+  user: root
+  # 密码留空表示无密码；若 root 设了密码，用环境变量传入，避免写进文件：
+  #   export CRONAPI_MYSQL_PASSWORD='你的密码'
+  password: "zhongyuan123"
+  database: cron_api
+  charset: utf8mb4
+  # 必须与本机 MySQL 的 time_zone 一致（macOS 默认多为此值）
+  timezone: "Asia/Shanghai"
+  max_idle_conns: 10
+  max_open_conns: 50
+  conn_max_lifetime: 30m
+  slow_threshold: 200ms
+
+redis:
+  enabled: true
+  addr: "127.0.0.1:6379"
+  password: ""
+  db: 0
+
+jwt:
+  # 本地开发用，生产必须用环境变量覆盖
+  secret: "local-dev-secret-change-me-0123456789"
+  issuer: cronApi
+  access_ttl: 2h
+  refresh_ttl: 168h
+
+wechat:
+  # 本地不请求微信服务器；登录码填 openid:任意字符串 即可模拟一个用户
+  mock: true
+  app_id: ""
+
+scheduler:
+  enabled: true
+  timezone: "Asia/Shanghai"
+  max_concurrency: 8
+
+http_client:
+  timeout: 15s
+  max_idle_conns: 100
+  insecure_skip_verify: false

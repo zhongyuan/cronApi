@@ -1,0 +1,67 @@
+{
+  "name": "示例-小程序登录后下单链路",
+  "description": "演示：自动登录获取登录态 → 调用业务接口 → 提取上游字段透传下游 → 断言",
+  "base_url": "http://127.0.0.1:8080",
+  "cron_expr": "0 */10 * * * *",
+  "timezone": "Asia/Shanghai",
+  "enabled": false,
+  "max_retry": 1,
+  "timeout_sec": 60,
+  "variables": {
+    "sku": "A1001"
+  },
+  "auths": {
+    "wx": {
+      "type": "wechat_miniprogram",
+      "code": "openid:u1001"
+    }
+  },
+  "steps": [
+    {
+      "name": "登录态-我的信息",
+      "method": "GET",
+      "url": "/api/v1/auth/me",
+      "auth": "login",
+      "auth_ref": "wx",
+      "extracts": {"open_id": "data.open_id"},
+      "asserts": [
+        {"source": "status", "op": "eq", "value": "200"},
+        {"source": "json:code", "op": "eq", "value": "0"},
+        {"source": "json:data.open_id", "op": "exists"}
+      ]
+    },
+    {
+      "name": "下单",
+      "method": "POST",
+      "url": "/api/v1/orders",
+      "auth": "login",
+      "auth_ref": "wx",
+      "body": "{\"sku\":\"{{sku}}\",\"open_id\":\"{{open_id}}\"}",
+      "extracts": {"order_id": "data.order_id"},
+      "asserts": [
+        {"source": "status", "op": "status_in", "value": "200,201"},
+        {"source": "json:data.order_id", "op": "exists", "message": "下单必须返回 order_id"}
+      ]
+    },
+    {
+      "name": "订单详情",
+      "method": "GET",
+      "url": "/api/v1/orders/{{order_id}}",
+      "auth": "login",
+      "auth_ref": "wx",
+      "asserts": [
+        {"source": "json:data.status", "op": "eq", "value": "created"}
+      ]
+    },
+    {
+      "name": "鉴权校验-无 token 应 401",
+      "method": "GET",
+      "url": "/api/v1/auth/me",
+      "auth": "none",
+      "skip_if": "{{skip_negative}}",
+      "asserts": [
+        {"source": "status", "op": "eq", "value": "401"}
+      ]
+    }
+  ]
+}

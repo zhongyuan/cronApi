@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>cronApi · 接口联调控制台</title>
+<link rel="stylesheet" href="./style.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏱</text></svg>" />
+</head>
+<body>
+<div id="app">
+
+  <!-- 登录 -->
+  <section id="loginView" class="login-wrap" hidden>
+    <div class="login-card">
+      <div class="brand">
+        <span class="brand-mark">⏱</span>
+        <div>
+          <h1>cronApi</h1>
+          <p>接口自动联调控制台</p>
+        </div>
+      </div>
+      <label class="field">
+        <span>登录码 <em>mock 模式可填 openid:dev</em></span>
+        <input id="loginCode" value="openid:dev" autocomplete="off" spellcheck="false" />
+      </label>
+      <button id="loginBtn" class="btn btn-primary btn-block">进入控制台</button>
+      <p id="loginErr" class="error-text"></p>
+    </div>
+  </section>
+
+  <!-- 主界面 -->
+  <section id="mainView" class="layout" hidden>
+    <aside class="sidebar">
+      <div class="brand small">
+        <span class="brand-mark">⏱</span>
+        <div><h1>cronApi</h1><p id="whoami">—</p></div>
+      </div>
+      <nav class="nav">
+        <button class="nav-item active" data-view="tasks"><span>▤</span> 任务列表</button>
+      </nav>
+      <div class="sidebar-foot">
+        <button id="logoutBtn" class="btn btn-ghost btn-block">退出登录</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <h2>接口联调任务</h2>
+          <p class="muted">配置接口步骤与定时规则，到点自动执行并生成报告</p>
+        </div>
+        <div class="topbar-actions">
+          <button id="refreshBtn" class="btn btn-ghost">刷新</button>
+          <button id="newTaskBtn" class="btn btn-primary">+ 新建任务</button>
+        </div>
+      </header>
+
+      <div id="stats" class="stats"></div>
+      <div id="taskList" class="task-list"></div>
+    </main>
+
+    <!-- 新建 / 编辑抽屉 -->
+    <div id="drawerMask" class="drawer-mask" hidden></div>
+    <aside id="drawer" class="drawer" hidden>
+      <header class="drawer-head">
+        <h3 id="drawerTitle">新建任务</h3>
+        <button id="closeDrawer" class="icon-btn" title="关闭">✕</button>
+      </header>
+      <div class="drawer-body" id="formBody">
+        <div class="section">
+          <div class="section-title">基本信息</div>
+          <label class="field"><span>任务名称 <b>*</b></span><input id="fName" placeholder="例如：小程序下单链路联调" /></label>
+          <label class="field"><span>说明</span><input id="fDesc" placeholder="选填" /></label>
+          <label class="field"><span>被测服务地址 <b>*</b></span><input id="fBaseURL" placeholder="http://127.0.0.1:8080" /></label>
+        </div>
+
+        <div class="section">
+          <div class="section-title">定时规则</div>
+          <div class="preset-row" id="presetRow"></div>
+          <label class="field">
+            <span>cron 表达式 <em>5 段=分钟级，6 段=秒级</em></span>
+            <input id="fCron" placeholder="*/5 * * * *" />
+          </label>
+          <div class="cron-preview" id="cronPreview"></div>
+          <div class="field-row">
+            <label class="field"><span>失败重试次数</span><input id="fRetry" type="number" min="0" max="5" value="1" /></label>
+            <label class="field"><span>超时（秒）</span><input id="fTimeout" type="number" min="1" max="3600" value="60" /></label>
+          </div>
+          <label class="switch-field">
+            <span>创建后立即启用定时执行</span>
+            <input id="fEnabled" type="checkbox" class="switch" checked />
+          </label>
+        </div>
+
+        <div class="section">
+          <div class="section-title">
+            接口步骤 <em id="stepCount"></em>
+            <button id="addStepBtn" class="btn btn-mini">+ 添加步骤</button>
+          </div>
+          <div id="stepsWrap"></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">
+            登录配置
+            <button id="addAuthBtn" class="btn btn-mini">+ 添加</button>
+          </div>
+          <p class="hint">小程序登录态：步骤选「自动登录」并引用这里的配置，执行时会先登录再带上 token。</p>
+          <div id="authsWrap"></div>
+        </div>
+      </div>
+      <footer class="drawer-foot">
+        <p id="formErr" class="error-text"></p>
+        <div class="foot-actions">
+          <button id="cancelBtn" class="btn btn-ghost">取消</button>
+          <button id="saveBtn" class="btn btn-primary">保存</button>
+        </div>
+      </footer>
+    </aside>
+
+    <!-- 执行详情 -->
+    <div id="runMask" class="drawer-mask" hidden></div>
+    <aside id="runPanel" class="drawer" hidden>
+      <header class="drawer-head">
+        <h3>执行报告</h3>
+        <button id="closeRun" class="icon-btn">✕</button>
+      </header>
+      <div class="drawer-body" id="runBody"></div>
+    </aside>
+  </section>
+
+  <div id="toast" class="toast" hidden></div>
+</div>
+<script src="./app.js"></script>
+</body>
+</html>

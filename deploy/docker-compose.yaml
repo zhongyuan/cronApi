@@ -1,0 +1,37 @@
+# 本地依赖：MySQL 8 + Redis 7
+# 用法：make up
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: cronapi-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: cron_api
+      TZ: Asia/Shanghai
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - cronapi-mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: cronapi-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - cronapi-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  cronapi-mysql:
+  cronapi-redis:

@@ -1,0 +1,33 @@
+# 生产部署：cronApi 容器 + 本机 Redis，MySQL 使用公网服务器
+#   docker compose -f deploy/docker-compose.prod.yaml --env-file deploy/.env up -d
+#
+# 注意：host.docker.internal 仅在 Docker Desktop 生效；
+# Linux 上连本机 Redis 请把 network_mode 改为 host，或让 Redis 也进同一网络。
+services:
+  cronApi:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: cronapi:latest
+    container_name: cronapi
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      TZ: Asia/Shanghai          # 容器默认 UTC，必须显式设置
+    ports:
+      - "127.0.0.1:8080:8080"    # 只绑本机，由 Nginx 对外提供 HTTPS
+    volumes:
+      - ../configs/config.prod.yaml:/app/configs/config.prod.yaml:ro
+    command: ["-c", "/app/configs/config.prod.yaml"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "/app/cronApi", "-v"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
